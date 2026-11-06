@@ -19,6 +19,18 @@ class M3U8AdFilterService {
 
   bool get isRunning => _server != null;
 
+  /// 去广告统计（应用运行期间累计）
+  /// filteredSegments：累计删掉的广告片段数
+  /// filteredPlaylists：累计处理过的播放列表数
+  int filteredSegments = 0;
+  int filteredPlaylists = 0;
+
+  /// 清零统计（以后用）
+  void resetStats() {
+    filteredSegments = 0;
+    filteredPlaylists = 0;
+  }
+
   /// 确保本地服务已启动，返回实际监听端口
   Future<int> _ensureStarted() async {
     if (_port != null) return _port!;
@@ -72,9 +84,11 @@ class M3U8AdFilterService {
 
       final filtered = await _fetchAndFilter(target);
       if (filtered == null) {
+        // 抓取失败：302 重定向到原始 M3U8，让播放器直接播原片
+        // （带广告但能播），不要返回 502 导致播放失败。
         request.response
-          ..statusCode = HttpStatus.badGateway
-          ..write('failed to fetch m3u8');
+          ..statusCode = HttpStatus.found
+          ..headers.set(HttpHeaders.locationHeader, target);
         await request.response.close();
         return;
       }
@@ -96,14 +110,14 @@ class M3U8AdFilterService {
   /// 抓回原始 M3U8 并过滤，失败返回 null
   Future<String?> _fetchAndFilter(String url) async {
     final client = HttpClient();
-    client.connectionTimeout = const Duration(seconds: 15);
+    client.connectionTimeout = const Duration(seconds: 8);
     try {
       final uri = Uri.parse(url);
       final req = await client.getUrl(uri);
       req.headers.set(HttpHeaders.userAgentHeader,
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36');
       req.headers.set(HttpHeaders.refererHeader, '${uri.scheme}://${uri.host}/');
-      final resp = await req.close().timeout(const Duration(seconds: 20));
+      final resp = await req.close().timeout(const Duration(seconds: 12));
       if (resp.statusCode != HttpStatus.ok) return null;
       final body = await resp.transform(utf8.decoder).join();
       if (!body.contains('#EXTM3U')) return body;
@@ -116,8 +130,18 @@ class M3U8AdFilterService {
   }
 
   // 广告特征（大小写不敏感）。注意：不用裸 "ad" 匹配，会误伤 load/head。
+  // 基础规则：常见广告路径/前后缀（/ad/、/ads/、/advert、ad_、-ad-、_ad.、
+  //   advertisement）+ 老牌广告平台域名（doubleclick、googlesyndication）。
+  // 新增规则（都是广告专用词，不会误伤正常片段）：
+  //   广告平台/域名：imasdk（Google IMA）、pubads（Google 广告服务）、
+  //     adsystem、adservice、moatads、smartadserver、adnxs（AppNexus）、
+  //     freewheel、springserve、taboola、outbrain；
+  //   广告位类型：preroll（片头）、midroll（片中）、postroll（片尾）、
+  //     adbreak/ad-break（广告插播点）、vast/vmap（视频广告协议）。
   static final RegExp _adPattern = RegExp(
-    r'/ad/|/ads/|/advert|ad_|-ad-|_ad\.|doubleclick|googlesyndication|advertisement',
+    r'/ad/|/ads/|/advert|ad_|-ad-|_ad\.|doubleclick|googlesyndication|advertisement'
+    r'|imasdk|pubads|adsystem|adservice|moatads|smartadserver|adnxs|freewheel|springserve|taboola|outbrain'
+    r'|preroll|midroll|postroll|adbreak|ad-break|vast|vmap',
     caseSensitive: false,
   );
 
@@ -138,6 +162,8 @@ class M3U8AdFilterService {
   /// - 主播放列表（#EXT-X-STREAM-INF）的子列表地址改写成走本过滤器
   /// - 其他标签原样保留
   static String filterPlaylist(String content, String baseUrl) {
+    // 成功处理一个播放列表，计数 +1
+    instance.filteredPlaylists++;
     final lines = content.split('\n');
     // 先解析成逻辑单元，方便处理
     final units = <_Unit>[];
@@ -180,7 +206,8 @@ class M3U8AdFilterService {
         if (rawUri.isEmpty) continue;
         final absolute = resolveUrl(rawUri, baseUrl);
         if (isAdUrl(absolute)) {
-          // 广告片段：整段删掉
+          // 广告片段：整段删掉，计数 +1
+          instance.filteredSegments++;
           continue;
         }
         out.add(unit.lines[0]);
