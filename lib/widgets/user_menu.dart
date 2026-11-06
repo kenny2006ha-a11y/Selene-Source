@@ -36,6 +36,7 @@ class _UserMenuState extends State<UserMenu> {
   String _m3u8ProxyUrl = '';
   String _version = '';
   bool _preferSpeedTest = true;
+  bool _adBlockEnabled = true;
   bool _localSearch = false;
   bool _isLocalMode = false;
 
@@ -65,6 +66,7 @@ class _UserMenuState extends State<UserMenu> {
         await UserDataService.getDoubanImageSourceDisplayName();
     final m3u8ProxyUrl = await UserDataService.getM3u8ProxyUrl();
     final preferSpeedTest = await UserDataService.getPreferSpeedTest();
+    final adBlockEnabled = await UserDataService.getAdBlockEnabled();
     final localSearch = await UserDataService.getLocalSearch();
 
     if (mounted) {
@@ -76,6 +78,7 @@ class _UserMenuState extends State<UserMenu> {
         _doubanImageSource = doubanImageSource;
         _m3u8ProxyUrl = m3u8ProxyUrl;
         _preferSpeedTest = preferSpeedTest;
+        _adBlockEnabled = adBlockEnabled;
         _localSearch = localSearch;
       });
     }
@@ -814,6 +817,26 @@ class _UserMenuState extends State<UserMenu> {
                         });
                       },
                       icon: LucideIcons.zap,
+                    ),
+                    // 分割线
+                    Container(
+                      height: 1,
+                      color: widget.isDarkMode
+                          ? const Color(0xFF374151)
+                          : const Color(0xFFe5e7eb),
+                    ),
+                    // 去广告选项
+                    _buildToggleOption(
+                      title: '去广告',
+                      value: _adBlockEnabled,
+                      onChanged: (value) async {
+                        await UserDataService.saveAdBlockEnabled(value);
+                        if (!mounted) return;
+                        setState(() {
+                          _adBlockEnabled = value;
+                        });
+                      },
+                      icon: LucideIcons.shield,
                     ),
                     // 本地搜索选项（本地模式下不显示）
                     if (!_isLocalMode) ...[
