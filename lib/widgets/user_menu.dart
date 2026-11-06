@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/m3u8_ad_filter_service.dart';
 import '../services/user_data_service.dart';
 import '../screens/login_screen.dart';
 import '../services/douban_cache_service.dart';
@@ -774,6 +775,7 @@ class _UserMenuState extends State<UserMenu> {
                         '豆瓣官方精品 CDN',
                         '豆瓣 CDN By CMLiussss（腾讯云）',
                         '豆瓣 CDN By CMLiussss（阿里云）',
+                        'Moontv2 图片代理（Cloudflare）',
                       ],
                       onChanged: (value) async {
                         await UserDataService.saveDoubanImageSource(value);
@@ -837,6 +839,26 @@ class _UserMenuState extends State<UserMenu> {
                         });
                       },
                       icon: LucideIcons.shield,
+                    ),
+                    // 去广告统计：菜单每次打开都会重建，显示的是最新数字
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 48,
+                        right: 16,
+                        bottom: 10,
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '已过滤 ${M3U8AdFilterService.instance.filteredSegments} 个广告片段 · 处理 ${M3U8AdFilterService.instance.filteredPlaylists} 个播放列表',
+                          style: FontUtils.poppins(
+                            fontSize: 12,
+                            color: widget.isDarkMode
+                                ? const Color(0xFF9ca3af)
+                                : const Color(0xFF6b7280),
+                          ),
+                        ),
+                      ),
                     ),
                     // 本地搜索选项（本地模式下不显示）
                     if (!_isLocalMode) ...[
