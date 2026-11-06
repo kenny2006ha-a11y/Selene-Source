@@ -25,6 +25,10 @@ Future<String> getImageUrl(String originalUrl, String? source) async {
           RegExp(r'img\d+\.doubanio\.com'),
           'img.doubanio.cmliussss.com',
         );
+      case 'proxy_moontv2':
+        // 走用户自己的 Cloudflare Pages 图片代理拿豆瓣图，
+        // 解决家里网络直连 doubanio 反盗链拿不到海报的问题。
+        return 'https://moontv2-afl.pages.dev/api/image-proxy?url=${Uri.encodeComponent(originalUrl)}';
       case 'direct':
       default:
         return originalUrl;
