@@ -7,6 +7,7 @@ import '../widgets/video_player_widget.dart';
 import '../widgets/video_card.dart';
 import '../services/api_service.dart';
 import '../services/m3u8_service.dart';
+import '../services/m3u8_ad_filter_service.dart';
 import '../services/douban_service.dart';
 import '../services/user_data_service.dart';
 import '../services/search_service.dart';
@@ -664,6 +665,17 @@ class _PlayerScreenState extends State<PlayerScreen>
         final encodedUrl = Uri.encodeComponent(newUrl);
         finalUrl = '$m3u8ProxyUrl$encodedUrl';
         print("使用 M3U8 代理: $finalUrl");
+      }
+
+      // 本地 M3U8 去广告：把播放地址包一层本地过滤代理
+      // （如果上面已拼了自定义代理，过滤器抓的就是代理后的地址再过滤）
+      if (finalUrl.contains('.m3u8')) {
+        final adBlockEnabled = await UserDataService.getAdBlockEnabled();
+        if (adBlockEnabled) {
+          finalUrl =
+              await M3U8AdFilterService.instance.wrapUrl(finalUrl);
+          print("使用本地去广告过滤: $finalUrl");
+        }
       }
 
       if (_isCasting) {
