@@ -9,6 +9,7 @@ class UserDataService {
   static const String _doubanImageSourceKey = 'douban_image_source';
   static const String _m3u8ProxyUrlKey = 'm3u8_proxy_url';
   static const String _preferSpeedTestKey = 'prefer_speed_test';
+  static const String _adBlockEnabledKey = 'ad_block_enabled';
   static const String _localSearchKey = 'local_search';
   static const String _isLocalModeKey = 'is_local_mode';
   
@@ -224,6 +225,18 @@ class UserDataService {
   static Future<bool> getPreferSpeedTest() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_preferSpeedTestKey) ?? true;
+  }
+
+  // 保存去广告设置
+  static Future<void> saveAdBlockEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_adBlockEnabledKey, enabled);
+  }
+
+  // 获取去广告设置（默认为 true）
+  static Future<bool> getAdBlockEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_adBlockEnabledKey) ?? true;
   }
 
   // 保存本地搜索设置
