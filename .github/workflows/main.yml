@@ -37,15 +37,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: selene-adblock-arm64
-          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-          retention-days: 30
-
-      - name: Build APK (arm64)
-        run: flutter build apk --release --target-platform android-arm64
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: selene-adblock-arm64
-          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          path: build/app/outputs/flutter-apk/*.apk
           retention-days: 30
