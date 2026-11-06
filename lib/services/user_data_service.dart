@@ -166,6 +166,8 @@ class UserDataService {
         return 'cdn_tencent';
       case '豆瓣 CDN By CMLiussss（阿里云）':
         return 'cdn_aliyun';
+      case 'Moontv2 图片代理（Cloudflare）':
+        return 'proxy_moontv2';
       default:
         return 'direct';
     }
@@ -198,6 +200,8 @@ class UserDataService {
         return '豆瓣 CDN By CMLiussss（腾讯云）';
       case 'cdn_aliyun':
         return '豆瓣 CDN By CMLiussss（阿里云）';
+      case 'proxy_moontv2':
+        return 'Moontv2 图片代理（Cloudflare）';
       default:
         return '直连';
     }
